@@ -10,6 +10,7 @@ import UIKit
 import Firebase
 import FirebaseAuth
 import FirebaseDatabase
+import SVProgressHUD
 
 class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDelegate {
     
@@ -17,7 +18,7 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
     
     var postArray: [PostData] = []
     
-    // DatabaseのobserverEventの登録上阿智を表す
+    // DatabaseのobserverEventの登録状態を表す
     var observing = false
     
     override func viewDidLoad() {
@@ -35,8 +36,8 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
         // テーブル行の高さをAutoLayoutで自動調整する
         tableView.rowHeight = UITableViewAutomaticDimension
         // テーブル行の高さの概算値を設定しておく
-        // 高さ概算値 = 「タテヨコ比１：１のUIImageViewの高さ（＝画面幅）」＋「いいねボタン、キャプションラベル、その他余白の高さの合計概算（＝１００ｐｔ）」
-        tableView.estimatedRowHeight = UIScreen.main.bounds.width + 100
+        // 高さ概算値 = 「タテヨコ比１：１のUIImageViewの高さ（＝画面幅）」＋「いいねボタン、キャプションラベル、その他余白の高さの合計概算（＝140pt）」
+        tableView.estimatedRowHeight = UIScreen.main.bounds.width + 140
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -121,6 +122,8 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
         // セル内のボタンのアクションをソースコードに設定する
         cell.likeButton.addTarget(self, action:#selector(handleButton(_:forEvent:)), for: .touchUpInside)
         
+        cell.commentButton.addTarget(self, action:#selector(handleCommentButton(_:forEvent:)), for: .touchUpInside)
+        
         return cell
     }
     
@@ -157,6 +160,43 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
             let postRef = Database.database().reference().child(Const.PostPath).child(postData.id!)
             let likes = ["likes": postData.likes]
             postRef.updateChildValues(likes)
+        }
+    }
+    
+    // セル内のコメントボタンがタップされた時に呼ばれる
+    @objc func handleCommentButton(_ sender: UIButton, forEvent event: UIEvent) {
+        print("DEBUG_PRINT: commentボタンがタップされました。")
+        
+        // タップされたセルのインデックスを求める
+        let touch = event.allTouches?.first
+        let point = touch!.location(in: self.tableView)
+        let indexPath = tableView.indexPathForRow(at: point)
+        
+        // 配列からタップされたインデックスのデータを取り出す
+        let postData = postArray[indexPath!.row]
+        
+        let cell = tableView.cellForRow(at: indexPath!) as! PostTableViewCell
+        let comment = cell.commentTextField.text;
+        
+        // Firebaseに保存するデータの準備
+        if let name = Auth.auth().currentUser?.displayName {
+            if comment?.isEmpty == false {
+                let data = ["name": name, "comment": comment]
+                postData.comment.append(data as AnyObject)
+                
+                // 増えたcommentをFirebaseに保存する
+                let postRef = Database.database().reference().child(Const.PostPath).child(postData.id!)
+                let comment = ["comment": postData.comment]
+                postRef.updateChildValues(comment)
+                
+                // コメント入力を削除
+                cell.commentTextField.text = ""
+                
+                SVProgressHUD.dismiss()
+                
+            } else {
+                SVProgressHUD.showError(withStatus: "コメントを入力してください。")
+            }
         }
     }
     

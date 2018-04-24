@@ -1,4 +1,4 @@
-//
+
 //  PostTableViewCell.swift
 //  Instagram
 //
@@ -15,10 +15,12 @@ class PostTableViewCell: UITableViewCell {
     @IBOutlet weak var likeLabel: UILabel!
     @IBOutlet weak var dateLabel: UILabel!
     @IBOutlet weak var captionLabel: UILabel!
+    @IBOutlet weak var commentTextField: UITextField!
+    @IBOutlet weak var commentButton: UIButton!
+    @IBOutlet weak var commentLabel: UILabel!
     
     override func awakeFromNib() {
         super.awakeFromNib()
-        // Initialization code
     }
 
     override func setSelected(_ selected: Bool, animated: Bool) {
@@ -46,6 +48,12 @@ class PostTableViewCell: UITableViewCell {
             let buttonImage = UIImage(named: "like_none")
             self.likeButton.setImage(buttonImage, for: .normal)
         }
+        var commentData: String = ""
+        for comment in postData.comment {
+            let data = comment as! NSDictionary
+            commentData = "\(data["name"]!) : \(data["comment"]!)\n" + commentData
+        }
+        self.commentLabel.text = commentData
     }
     
 }
